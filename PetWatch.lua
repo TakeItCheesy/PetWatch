@@ -84,7 +84,6 @@ function hide()
 	MPP = 0
 	TP = 0
     PetWatch:hide()
-	Settings:save('all')
 end
 
 function update(pet)
