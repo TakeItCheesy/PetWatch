@@ -41,10 +41,6 @@ require('sets')
 function init()
 	PetName = nil
 	PetIndex = nil
-	CurrentHP = 0
-	MaxHP = 0
-	CurrentMP = 0
-	MaxMP = 0
 	HPP = 0
 	MPP = 0
 	TP = 0
@@ -52,8 +48,8 @@ function init()
 
 	Defaults = T{	
 	pos = { 
-		x = windower.get_windower_settings().x_res*2/3
-		y = windower.get_windower_settings().y_res-20
+		x = windower.get_windower_settings().x_res/3
+		y = windower.get_windower_settings().y_res/3
 	},
 	padding = 5,
 	text = { size=12, font='Impact' }
@@ -78,26 +74,19 @@ function hide()
 	PetActive = false
 	PetName = nil
 	PetIndex = nil
-	CurrentHP = 0
-	MaxHP = 0
-	CurrentMP = 0
-	MaxMP = 0
 	HPP = 0
 	MPP = 0
 	TP = 0
     PetWatch:hide()
 end
 
-function update()
+function update(pet)
 	if not S{9, 14, 15, 18, 21}:contains(windower.ffxi.get_player()['main_job_id']) then 
 		hide()
 		return 
 	end
 	
-	local pet = windower.ffxi.get_mob_by_target('pet') or nil
-	
 	if pet then
-		PetActive = true
 		PetName = pet.name
 		PetIndex = pet.index
 		HPP = pet.hpp
@@ -105,22 +94,33 @@ function update()
 		TP = pet.tp		
 	end
 	
-	    -- if HPP > 74 then
-            -- color = {128, 255, 0}
-			-- flavor = 'feelin good (^_^)'
-        -- elseif HPP > 49 then
-            -- color = {255, 255, 0}
-			-- flavor = 'taking hits (._.)'
-        -- elseif HPP > 24 then
-            -- color = {255, 150, 0}
-			-- flavor = 'halp! (@_@)'
-        -- elseif HPP > 0 then
-            -- color = {255, 0, 0}
-			-- flavor = 'healz plx! (>.<)'
-		-- else
-			-- color = {150, 0, 0}
-			-- flavor = 'ded! (x.x)'
-        -- end
+	local color
+	local flavor
+	
+	if HPP > 74 then
+		color = {128, 255, 0}
+		flavor = 'feelin good\n(^_^)'
+		PetWatch:pad(Settings.padding)
+	elseif HPP > 49 then
+		color = {255, 255, 0}
+		flavor = 'taking hits\n(._.)'
+		PetWatch:pad(Settings.padding)
+	elseif HPP > 24 then
+		color = {255, 150, 0}
+		flavor = 'halp!\n(@_@)'
+		PetWatch:pad(Settings.padding)
+	elseif HPP > 0 then
+		color = {255, 0, 0}
+		flavor = 'healz plx!\n(>.<)'
+		PetWatch:pad(Settings.padding)
+	else
+		color = {150, 0, 0}
+		flavor = 'ded!\n(x.x)'
+		PetWatch:pad(10)
+	end
+	
+	PetWatch:color(color[1], color[2], color[3])
+	PetWatch:text(HPP..'\n'..flavor)
 end
 
 handle_commands = function(...)
@@ -147,5 +147,11 @@ windower.register_event('logout', hide)
 windower.register_event('job change', hide)
 
 windower.register_event('prerender', function()
-
+	local pet = windower.ffxi.get_mob_by_target('pet') or nil
+	if pet then
+		PetActive = true
+		update(pet)
+	else
+		PetActive = false
+	end
 end)
