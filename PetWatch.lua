@@ -30,7 +30,7 @@ _addon.name = 'PetWatch'
 _addon.author = 'TakeItCheesy'
 _addon.version = '0.1.0'
 _addon.command = 'pw'
-_addon.commands = {'reset'}
+_addon.commands = {'reset', 'save', 'pos'}
 
 config = require ('config')
 texts  = require('texts')
@@ -159,8 +159,9 @@ handle_commands = function(...)
         local cmd = table.remove(args,1):lower()
 		if cmd == 'reset' then
 			PetDied = false
-		end
-		if cmd == 'pos' then
+		elseif cmd == 'save' then
+			Settings:save('all')
+		elseif cmd == 'pos' then
 			if args[1] and windower.get_windower_settings().x_res >= tonumber(args[1]) >= 0 then
 				Settings.pos.x = tonumber(args[1])
 			end
