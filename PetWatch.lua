@@ -45,14 +45,16 @@ function init()
 	MPP = 0
 	TP = 0
 	PetActive = false
+	PetDied = false
 
 	Defaults = T{	
 	pos = { 
-		x = windower.get_windower_settings().x_res/3
+		x = windower.get_windower_settings().x_res/3,
 		y = windower.get_windower_settings().y_res/3
 	},
 	padding = 5,
-	text = { size=12, font='Impact' }
+	bgcolor = {0,0,0},
+	text = { size=12, font='Impact' },
 	}	
 	
 	Settings = config.load('data\\settings.xml', Defaults)	
@@ -63,6 +65,10 @@ function init()
 	PetWatch:size(Settings.text.size)
 	PetWatch:pos(Settings.pos.x, Settings.pos.y)
 	PetWatch:pad(Settings.padding)
+	PetWatch:stroke_width(1)
+	PetWatch:stroke_color(255,255,255)
+	PetWatch:stroke_alpha(0)
+	PetWatch:bg_color(Settings.bgcolor[1],Settings.bgcolor[2] ,Settings.bgcolor[3])
 end
 
 function show()
@@ -78,6 +84,7 @@ function hide()
 	MPP = 0
 	TP = 0
     PetWatch:hide()
+	Settings:save('all')
 end
 
 function update(pet)
@@ -86,41 +93,65 @@ function update(pet)
 		return 
 	end
 	
-	if pet then
-		PetName = pet.name
-		PetIndex = pet.index
-		HPP = pet.hpp
-		MPP = pet.mpp
-		TP = pet.tp		
-	end
+	PetName = pet.name
+	PetIndex = pet.index
+	HPP = pet.hpp
+	MPP = pet.mpp
+	TP = pet.tp
+	PetDied = false
 	
 	local color
 	local flavor
+	local bg = nil
+	local stroke = nil
+    local size = nil
+	local pad = nil
 	
 	if HPP > 74 then
 		color = {128, 255, 0}
 		flavor = 'feelin good\n(^_^)'
-		PetWatch:pad(Settings.padding)
 	elseif HPP > 49 then
 		color = {255, 255, 0}
 		flavor = 'taking hits\n(._.)'
-		PetWatch:pad(Settings.padding)
 	elseif HPP > 24 then
 		color = {255, 150, 0}
 		flavor = 'halp!\n(@_@)'
-		PetWatch:pad(Settings.padding)
 	elseif HPP > 0 then
 		color = {255, 0, 0}
 		flavor = 'healz plx!\n(>.<)'
-		PetWatch:pad(Settings.padding)
 	else
-		color = {150, 0, 0}
+		color = {0, 0, 0}
 		flavor = 'ded!\n(x.x)'
-		PetWatch:pad(10)
+		bg = {125, 0, 0}		
+		size = 24
+		pad = 25
+		stroke = 90
+		PetDied = true
+	end
+	
+	if pad then
+		PetWatch:pad(pad)
+	else
+		PetWatch:pad(Settings.padding)
+	end
+	if bg then	
+		PetWatch:bg_color(bg[1], bg[2], bg[3])
+	else
+		PetWatch:bg_color(Settings.bgcolor[1],Settings.bgcolor[2] ,Settings.bgcolor[3])
+	end
+	if size then	
+		PetWatch:size(size)
+	else	
+		PetWatch:size(Settings.text.size)
+	end
+	if stroke then
+		PetWatch:stroke_alpha(stroke)
+	else
+		PetWatch:stroke_alpha(0)
 	end
 	
 	PetWatch:color(color[1], color[2], color[3])
-	PetWatch:text(HPP..'\n'..flavor)
+	PetWatch:text('HP: '..HPP..'%\n'..flavor)
 end
 
 handle_commands = function(...)
@@ -128,10 +159,17 @@ handle_commands = function(...)
     if args ~= nil then
         local cmd = table.remove(args,1):lower()
 		if cmd == 'reset' then
-			
+			PetDied = false
 		end
 		if cmd == 'pos' then
-		
+			if args[1] and windower.get_windower_settings().x_res >= tonumber(args[1]) >= 0 then
+				Settings.pos.x = tonumber(args[1])
+			end
+			if args[2] and windower.get_windower_settings().y_res >= tonumber(args[2]) >= 0 then
+				Settings.pos.y = tonumber(args[2])
+			end
+			PetWatch:pos(Settings.pos.x, Settings.pos.y)
+			Settings:save('all')
 		end
 	end
 end
@@ -140,8 +178,6 @@ windower.register_event('addon command', handle_commands)
 
 windower.register_event('load', init)
 
-windower.register_event('unload', hide)
-
 windower.register_event('logout', hide)
 
 windower.register_event('job change', hide)
@@ -149,9 +185,9 @@ windower.register_event('job change', hide)
 windower.register_event('prerender', function()
 	local pet = windower.ffxi.get_mob_by_target('pet') or nil
 	if pet then
-		PetActive = true
-		update(pet)
-	else
-		PetActive = false
+		show()
+		update(pet)		
+	elseif not PetDied then
+		hide()
 	end
 end)
